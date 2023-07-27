@@ -1,9 +1,11 @@
+# imports
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 import numpy as np
 import cv2
 
+# Path: landmark.py
 model_path = 'pose_landmarker.task'
 
 BaseOptions = mp.tasks.BaseOptions
@@ -18,6 +20,4 @@ options = PoseLandmarkerOptions(
 with PoseLandmarker.create_from_options(options) as landmarker:
         # Load the input image from an image file.
     mp_image = mp.Image.create_from_file('image.png')
-
-    # Load the input image from a numpy array.
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=numpy_image)
+    pose_landmarker_result = landmarker.detect(mp_image)
