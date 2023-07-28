@@ -1,6 +1,6 @@
 # imports
 
-# need python 3.7.9 for mediapipe
+# need python 3.10.8 for mediapipe
 import mediapipe as mp # pip install mediapipe==0.10.2
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -55,6 +55,7 @@ class Tracker():
         return annotated_image
 
     def detect_and_draw(self, image):
+        image = mp.Image(image)
         marks = self.final_landmarker.detect(image)
         return self.draw_landmarks_on_image(image.numpy_view(), marks)
     
