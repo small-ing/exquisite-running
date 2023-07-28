@@ -10,16 +10,20 @@ import numpy as np
 import cv2
 
 class Tracker():
-    def __init__(self):
+    def __init__(self, mode='IMAGE'):
         self.model_path = 'pose_landmarker_lite.task'
         self.base_options = mp.tasks.BaseOptions
         self.pose_landmarker = mp.tasks.vision.PoseLandmarker
         self.landmarker_options = mp.tasks.vision.PoseLandmarkerOptions
         self.running_mode = mp.tasks.vision.RunningMode
-        self.options = self.landmarker_options(
-            base_options=self.base_options(model_asset_path=self.model_path),
-            running_mode=self.running_mode.IMAGE)
-        
+        if mode == 'IMAGE':
+            self.options = self.landmarker_options(
+                base_options=self.base_options(model_asset_path=self.model_path),
+                running_mode=self.running_mode.IMAGE)
+        else:
+            self.options = self.landmarker_options(
+                base_options=self.base_options(model_asset_path=self.model_path),
+                running_mode=self.running_mode.VIDEO)
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
                 
         

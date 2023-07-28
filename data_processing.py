@@ -8,7 +8,6 @@ import mediapipe as mp
 landmarker = Tracker()
 # read in images, pass them through the landmark, and save tensors that store the landmark data
 def collect_data(batch_size):
-    pass
     folder_path = 'data'
     '''
     Each landmark has 4 values:
@@ -16,10 +15,12 @@ def collect_data(batch_size):
         
     X coordinate
     Y coordinate
-    Z coordinate (Depth with respect to hips)
+    Z coordinate (Depth with respect to hips) [CLOSER TO CAMERA = NEGATIVE]
+        Z is roughly normalized to same scale as X
     Visibility between 0-1
     '''
-    
+    counter = 0
+    joint_counter = 0
     empty_landmarks = np.zeros((batch_size, 33, 4)) # 33 landmarks, 4 values per landmark
     empty_labels = np.zeros((batch_size)) # 1 label per image
     
@@ -36,9 +37,15 @@ def collect_data(batch_size):
         image_path = os.path.join(folder_path, image_file)
         mp_image = mp.Image.create_from_file(image_path)
         
-        landmarker.final_landmarker.detect(mp_image).pose_landmarks[0] # this is the landmark data we need to save in the tensors
-    
-    
+        for landmark in landmarker.final_landmarker.detect(mp_image).pose_landmarks[0]: # this is the landmark data we need to save in the tensors
+            empty_landmarks[counter][joint_counter][0], empty_landmarks[counter][joint_counter][1] = landmark.x, landmark.y
+            empty_landmarks[counter][joint_counter][2], empty_landmarks[counter][joint_counter][3] = landmark.z, landmark.visibility
+            if joint_counter < 32:
+                joint_counter += 1
+            else: 
+                joint_counter = 0
+        counter += 1
+    return empty_landmarks, empty_labels
     
 
 
@@ -46,4 +53,10 @@ def collect_data(batch_size):
 
 
 if __name__ == "__main__":
-    
+    landmarks, labels = collect_data(3)
+    # try:
+    #     # Save the array to the text file
+    #     np.savetxt('output.txt', landmarks)
+    #     print(f"Array saved successfully.")
+    # except Exception as e:
+    #     print(f"Error occurred while saving the array: {e}")
