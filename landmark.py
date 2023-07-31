@@ -55,7 +55,11 @@ class Tracker():
         return annotated_image
 
     def detect_and_draw(self, image):
-        image = mp.Image(image)
+        marks = self.final_landmarker.detect(image)
+        return self.draw_landmarks_on_image(image.numpy_view(), marks)
+    
+    def detect_and_draw_frame(self, image):
+        image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
         marks = self.final_landmarker.detect(image)
         return self.draw_landmarks_on_image(image.numpy_view(), marks)
     
@@ -65,7 +69,7 @@ if __name__ == "__main__":
     pTracker = Tracker()
     with pTracker.final_landmarker as landmarker:
             # Load the input image from an image file.
-        mp_image = mp.Image.create_from_file('data/bad running form169.jpg')
+        mp_image = mp.Image.create_from_file('data/image.png')
         # print(pTracker.final_landmarker.detect(mp_image).pose_landmarks[0])
         annotated_image = pTracker.detect_and_draw(mp_image)
         while True:

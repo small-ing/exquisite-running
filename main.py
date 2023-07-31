@@ -21,8 +21,8 @@ while True:
         break
     
     #insert any model calls here
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    frame = landmark_tracker.detect_and_draw(frame)
+    frame = landmark_tracker.detect_and_draw_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     
     cv2.imshow("Camera", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
