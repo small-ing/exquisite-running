@@ -4,6 +4,7 @@ import torch.nn as nn
 import numpy as np
 import os
 import mediapipe as mp
+from alive_progress import alive_bar
 
 landmarker = Tracker()
 # read in images, pass them through the landmark, and save tensors that store the landmark data
@@ -47,13 +48,44 @@ def collect_data(batch_size):
         counter += 1
     return empty_landmarks, empty_labels
     
+def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, test_labels):
+    should_save = False
+    for i in range(epochs):
+        with alive_bar(len(train_loader), title=i) as bar:
+            for img, label in train_loader:
+                img = img.to(device)
+                img = img.to(torch.float)
+                label = label.to(device) 
+                pred = model(img)
+                bar()
 
+                loss = loss_fn(pred, label)
+                optimizer.zero_grad()    
+                loss.backward()
+                optimizer.step()
+            test_images = test_images.to(torch.float).to(device)
+            pred = model(test_images)
+            digit = torch.argmax(pred, dim=1)
+            test_labels = test_labels.to(device)
+            acc = torch.sum(digit == test_labels)/len(test_labels)
+            if acc > 0.92 and loss < 0.2:
+                if not should_save:
+                    print("Good enough to save")
+                should_save = True
+                if acc > 0.95 and loss < 0.10:
+                    print(f"Accuracy - {acc} and Loss - {loss} are ideal")
+                    print("Model is Ideal, saving now...")
+                    break
+        print(f"Epoch {i+1}: loss: {loss}, test accuracy: {acc}")
+    return should_save
 
 # take the generated tensors, and pass them through a CNN to generate a prediction
 
 
 if __name__ == "__main__":
     landmarks, labels = collect_data(3)
+    print(landmarks)
+    print(labels)
     # try:
     #     # Save the array to the text file
     #     np.savetxt('output.txt', landmarks)
