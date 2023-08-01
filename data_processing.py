@@ -4,6 +4,8 @@ import torch.nn as nn
 import numpy as np
 import os
 import mediapipe as mp
+import time
+import cv2
 from alive_progress import alive_bar
 
 landmarker = Tracker()
@@ -22,7 +24,7 @@ def collect_data(batch_size):
     '''
     counter = 0
     joint_counter = 0
-    empty_landmarks = np.zeros((batch_size, 33, 4)) # 33 landmarks, 4 values per landmark
+    empty_vid_landmarks = np.zeros((1, 33, 4)) # 33 landmarks, 4 values per landmark
     empty_labels = np.zeros((batch_size)) # 1 label per image
     
     # Check if the folder exists
@@ -32,21 +34,53 @@ def collect_data(batch_size):
 
     # Get a list of image files in the folder
     image_files = [file for file in os.listdir(folder_path) if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
-
+    video_files = [file for file in os.listdir(folder_path) if file.lower().endswith((".mp4"))]
+    empty_im_landmarks = np.zeros((len(image_files), 33, 4)) # 33 landmarks, 4 values per landmark
     # Process each image in the folder
+    for video_file in video_files:
+        #print(os.path.join(folder_path, video_file))
+        vid = cv2.VideoCapture(os.path.join(folder_path, video_file))
+        
+        frame = 0
+        success = 1 
+        while success:
+            success, image = vid.read()
+            if image is None:
+                pass
+            else:
+                # if frame number is the same as the number of frames in the landmark tensor, recreate it with more space
+                if frame == len(empty_vid_landmarks):
+                    empty_vid_landmarks = np.concatenate((empty_vid_landmarks, np.zeros((1, 33, 4))))
+                image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+
+                try:
+                    for landmark in landmarker.final_landmarker.detect(image).pose_landmarks[0]:
+                        empty_vid_landmarks[frame][joint_counter][0], empty_vid_landmarks[frame][joint_counter][1] = landmark.x, landmark.y
+                        empty_vid_landmarks[frame][joint_counter][2], empty_vid_landmarks[frame][joint_counter][3] = landmark.z, landmark.visibility
+                    frame += 1
+                except:
+                    print("No landmarks found")
+        vid.release()
+    print(empty_vid_landmarks.shape)
+                    
+            
     for image_file in image_files:
         image_path = os.path.join(folder_path, image_file)
         mp_image = mp.Image.create_from_file(image_path)
         
         for landmark in landmarker.final_landmarker.detect(mp_image).pose_landmarks[0]: # this is the landmark data we need to save in the tensors
-            empty_landmarks[counter][joint_counter][0], empty_landmarks[counter][joint_counter][1] = landmark.x, landmark.y
-            empty_landmarks[counter][joint_counter][2], empty_landmarks[counter][joint_counter][3] = landmark.z, landmark.visibility
+            empty_im_landmarks[counter][joint_counter][0], empty_im_landmarks[counter][joint_counter][1] = landmark.x, landmark.y
+            empty_im_landmarks[counter][joint_counter][2], empty_im_landmarks[counter][joint_counter][3] = landmark.z, landmark.visibility
             if joint_counter < 32:
                 joint_counter += 1
             else: 
                 joint_counter = 0
         counter += 1
-    return empty_landmarks, empty_labels
+    
+    
+    # combine the image and video landmarks
+    filled_landmarks = np.concatenate((empty_im_landmarks, empty_vid_landmarks))
+    return filled_landmarks, empty_labels
     
 def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, test_labels):
     should_save = False
@@ -83,9 +117,12 @@ def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, te
 
 
 if __name__ == "__main__":
+    print("Starting...")
+    start_time = time.time()
     landmarks, labels = collect_data(3)
-    print(landmarks)
+    print("Landmarks Shape: ", landmarks.shape)
     print(labels)
+    print("Ending... Time elapsed: ", time.time() - start_time)
     # try:
     #     # Save the array to the text file
     #     np.savetxt('output.txt', landmarks)

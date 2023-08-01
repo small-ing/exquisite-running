@@ -7,6 +7,7 @@ from mediapipe.tasks.python import vision
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 import numpy as np
+import torch
 import cv2
 
 class Tracker():
@@ -62,6 +63,69 @@ class Tracker():
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
         marks = self.final_landmarker.detect(image)
         return self.draw_landmarks_on_image(image.numpy_view(), marks)
+
+class NN(torch.nn.Module):
+    def __init__(self):
+        super(NN, self).__init__()
+        
+        self.layer1 = torch.nn.Linear(132, 128, bias=True)
+        self.layer2 = torch.nn.Linear(128, 256, bias=True)
+    
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        return out
+
+class CNN(torch.nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        keep_prob = 0.5
+        # L1 ImgIn shape=(?, 33, 4, 1)
+        # Conv -> (?, 33, 4, 32)
+        # Pool -> (?, 16, 2, 32)
+        self.layer1 = torch.nn.Sequential(
+            torch.nn.Conv2d(1, 32, kernel_size=2, stride=1, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2, stride=2),
+            torch.nn.Dropout(p=1 - keep_prob))
+        # L2 ImgIn shape=(?, 16, 2, 32)
+        # Conv      ->(?, 16, 2, 64)
+        # Pool      ->(?, 8, 1, 64)
+        self.layer2 = torch.nn.Sequential(
+            torch.nn.Conv2d(32, 128, kernel_size=3, stride=1, padding=1),
+            torch.nn.ReLU(),
+            #torch.nn.MaxPool2d(kernel_size=2, stride=2),
+            torch.nn.Dropout(p=1 - keep_prob))
+        # L3 ImgIn shape=(?, 7, 7, 64)
+        # Conv ->(?, 5, 0, 128)
+        # Pool ->(?, 2, 0, 128)
+        self.layer3 = torch.nn.Sequential(
+            torch.nn.Conv2d(128, 256, kernel_size=2, stride=1, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0),
+            torch.nn.Dropout(p=1 - keep_prob))
+
+        # L4 FC 4x4x128 inputs -> 625 outputs
+        self.layer4 = torch.nn.Sequential(
+            torch.nn.Linear(1536, 625, bias=True),
+            torch.nn.ReLU(),
+            torch.nn.Linear(625, 625, bias=True),
+            torch.nn.ReLU(),
+            torch.nn.Linear(625, 625, bias=True),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(p=1 - keep_prob))
+        # L5 Final FC 625 inputs -> 10 outputs
+        self.fc2 = torch.nn.Linear(625, 24, bias=True)
+        torch.nn.init.xavier_uniform_(self.fc2.weight) # initialize parameters
+
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = out.view(out.size(0), -1)   # Flatten them for FC
+        out = self.layer4(out)
+        out = self.fc2(out)
+        return out
     
 # Path: landmark.py
 
