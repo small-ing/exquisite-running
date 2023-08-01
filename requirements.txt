@@ -1,3 +1,4 @@
+alive-progress==1.6.1
 mediapipe==0.10.2
 opencv-python==4.8.0.74
 torch==2.0.1

@@ -10,7 +10,7 @@ from alive_progress import alive_bar
 
 landmarker = Tracker()
 # read in images, pass them through the landmark, and save tensors that store the landmark data
-def collect_data(batch_size):
+def collect_data():
     folder_path = 'data'
     '''
     Each landmark has 4 values:
@@ -25,7 +25,7 @@ def collect_data(batch_size):
     counter = 0
     joint_counter = 0
     empty_vid_landmarks = np.zeros((1, 33, 4)) # 33 landmarks, 4 values per landmark
-    empty_labels = np.zeros((batch_size)) # 1 label per image
+    empty_labels = np.zeros((1)) # 1 label per image
     
     # Check if the folder exists
     if not os.path.exists(folder_path):
@@ -41,6 +41,13 @@ def collect_data(batch_size):
         #print(os.path.join(folder_path, video_file))
         vid = cv2.VideoCapture(os.path.join(folder_path, video_file))
         
+        stride_time = "whatever"
+        def calc_stride():
+            pass
+        #some logic tracking same foot hitting the ground
+        #stride_time = calc_stride()
+        #pass some var stride time to the tensor as a fifth value
+        
         frame = 0
         success = 1 
         while success:
@@ -51,12 +58,14 @@ def collect_data(batch_size):
                 # if frame number is the same as the number of frames in the landmark tensor, recreate it with more space
                 if frame == len(empty_vid_landmarks):
                     empty_vid_landmarks = np.concatenate((empty_vid_landmarks, np.zeros((1, 33, 4))))
+                    empty_labels = np.concatenate((empty_labels, np.zeros((1))))
                 image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
                 try:
                     for landmark in landmarker.final_landmarker.detect(image).pose_landmarks[0]:
                         empty_vid_landmarks[frame][joint_counter][0], empty_vid_landmarks[frame][joint_counter][1] = landmark.x, landmark.y
                         empty_vid_landmarks[frame][joint_counter][2], empty_vid_landmarks[frame][joint_counter][3] = landmark.z, landmark.visibility
+                    empty_labels[frame] = 0 # 0 for bad, 1 for good
                     frame += 1
                 except:
                     print("No landmarks found")
@@ -67,6 +76,8 @@ def collect_data(batch_size):
     for image_file in image_files:
         image_path = os.path.join(folder_path, image_file)
         mp_image = mp.Image.create_from_file(image_path)
+        offset = len(empty_labels) -1
+        empty_labels = np.concatenate((empty_labels, np.zeros((len(image_files)))))
         
         for landmark in landmarker.final_landmarker.detect(mp_image).pose_landmarks[0]: # this is the landmark data we need to save in the tensors
             empty_im_landmarks[counter][joint_counter][0], empty_im_landmarks[counter][joint_counter][1] = landmark.x, landmark.y
@@ -75,6 +86,7 @@ def collect_data(batch_size):
                 joint_counter += 1
             else: 
                 joint_counter = 0
+        empty_labels[offset + counter] = 1 # 0 for bad, 1 for good
         counter += 1
     
     
@@ -119,7 +131,7 @@ def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, te
 if __name__ == "__main__":
     print("Starting...")
     start_time = time.time()
-    landmarks, labels = collect_data(3)
+    landmarks, labels = collect_data()
     print("Landmarks Shape: ", landmarks.shape)
     print(labels)
     print("Ending... Time elapsed: ", time.time() - start_time)
