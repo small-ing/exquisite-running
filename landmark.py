@@ -39,6 +39,38 @@ class Tracker():
         dot_prd = np.dot(vec_1, vec_2)
         angle = np.arccos(dot_prd / (vec_1_magnitude * vec_2_magnitude))
         return angle
+    
+    def calculate_center_mass(l_shoulder, r_shoulder, l_hip, r_hip):
+        shoulders = [l_shoulder, r_shoulder]
+        hips = [l_hip, r_hip]
+
+        #extract positional data from landmarks
+        for index, shld in enumerate(shoulders):
+            if index == 0:
+                shoulder_pos_x =[]
+                shoulder_pos_y =[]
+            else:
+                None
+            shoulder_pos_x.append(shld.x)
+            shoulder_pos_y.append(shld.y)
+        for i, hip in enumerate(hips):
+            if i ==0:
+                hip_pos_x = []
+                hip_pos_y = []
+            else:
+                None
+            hip_pos_x.append(hip.x)
+            hip_pos_y.append(hip.y)
+
+        #calculate midpoints for shoulders/hips
+        mid_shoulder_x, mid_shoulder_y  = np.average(shoulder_pos_x), np.average(shoulder_pos_y)
+        mid_hip_x, mid_hip_y  = np.average(hip_pos_x), np.average(hip_pos_y)
+
+        #creates vector from midpoints
+        center_of_mass = (mid_shoulder_x - mid_hip_x, mid_shoulder_y - mid_hip_y)
+        return center_of_mass
+
+
         
     def draw_landmarks_on_image(self, rgb_image, detection_result):
         pose_landmarks_list = detection_result.pose_landmarks
