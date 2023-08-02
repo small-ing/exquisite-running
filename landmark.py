@@ -11,8 +11,13 @@ import torch
 import cv2
 
 class Tracker():
-    def __init__(self, mode='IMAGE'):
-        self.model_path = 'pose_landmarker_lite.task'
+    def __init__(self, model='LITE', mode='IMAGE'):
+        if mode == 'LITE':
+            self.model_path = 'model/pose_landmarker_lite.task'
+        elif mode == 'FULL':
+            self.model_path = 'model/pose_landmarker_full.task'
+        else:
+            self.model_path = 'model/pose_landmarker_heavy.task'
         self.base_options = mp.tasks.BaseOptions
         self.pose_landmarker = mp.tasks.vision.PoseLandmarker
         self.landmarker_options = mp.tasks.vision.PoseLandmarkerOptions
@@ -68,9 +73,9 @@ class NN(torch.nn.Module):
     def __init__(self):
         super(NN, self).__init__()
         
-        self.layer1 = torch.nn.Linear(132, 128, bias=True)
-        self.layer2 = torch.nn.Linear(128, 256, bias=True)
-        self.layer3 = torch.nn.Linear(256, 2, bias=True)
+        self.layer1 = torch.nn.Linear(128, 1056, bias=True)
+        self.layer2 = torch.nn.Linear(128, 128, bias=True)
+        self.layer3 = torch.nn.Linear(128, 2, bias=True)
     
     def forward(self, x):
         out = self.layer1(x)
@@ -117,7 +122,7 @@ class CNN(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Dropout(p=1 - keep_prob))
         # L5 Final FC 625 inputs -> 10 outputs
-        self.fc2 = torch.nn.Linear(625, 24, bias=True)
+        self.fc2 = torch.nn.Linear(625, 2, bias=True)
         torch.nn.init.xavier_uniform_(self.fc2.weight) # initialize parameters
 
     def forward(self, x):
@@ -129,17 +134,23 @@ class CNN(torch.nn.Module):
         out = self.fc2(out)
         return out
     
+    def predict_frame(self):
+        pass
+        '''
+        form = torch.topk(self.model) etc.
+        '''
 # Path: landmark.py
 
 if __name__ == "__main__":
-    pTracker = Tracker()
+    pTracker = Tracker(model="HEAVY")
     with pTracker.final_landmarker as landmarker:
             # Load the input image from an image file.
-        mp_image = mp.Image.create_from_file('data/image.png')
-        # print(pTracker.final_landmarker.detect(mp_image).pose_landmarks[0])
-        annotated_image = pTracker.detect_and_draw(mp_image)
+        image = cv2.imread("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F.png")
+        image = pTracker.detect_and_draw_frame(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F_LANDMARKED.png", image)
         while True:
-            cv2.imshow("Image", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
+            cv2.imshow("Image", image)
             
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
