@@ -48,8 +48,8 @@ def collect_data():
     video_files = good_video_files + bad_video_files
     empty_im_landmarks = np.zeros((len(image_files), 33, 4)) # 33 landmarks, 4 values per landmark
     # Process each image in the folder
-    for video_file in video_files:
-        with alive_bar(len(video_files)) as bar:
+    with alive_bar(len(video_files)) as bar:
+        for video_file in video_files:
             #print(os.path.join(folder_path, video_file))
             if video_file in good_video_files:
                 vid = cv2.VideoCapture(os.path.join(folder_path + '/good', video_file))
@@ -96,8 +96,8 @@ def collect_data():
             
     offset = len(empty_labels) -1
     empty_labels = np.concatenate((empty_labels, np.zeros((len(image_files)))))
-    for image_file in image_files:
-        with alive_bar(len(image_files)) as bar:
+    with alive_bar(len(image_files)) as bar:
+        for image_file in image_files:
             if image_file in good_image_files:
                 image_path = os.path.join(folder_path + "/good", image_file)
             else:
@@ -187,7 +187,7 @@ if __name__ == "__main__":
     model = CNN()
     model.to(device)
     
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     criteron = nn.CrossEntropyLoss()
     
     print("Time to initialize model: ", time.time() - start_time)

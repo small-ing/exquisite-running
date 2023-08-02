@@ -146,7 +146,7 @@ class CNN(torch.nn.Module):
 
         # L4 FC 4x4x128 inputs -> 625 outputs
         self.layer4 = torch.nn.Sequential(
-            torch.nn.Linear(1536, 625, bias=True),
+            torch.nn.Linear(2304, 625, bias=True),
             torch.nn.ReLU(),
             torch.nn.Linear(625, 625, bias=True),
             torch.nn.ReLU(),
