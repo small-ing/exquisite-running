@@ -13,12 +13,14 @@ camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 
 
+
 while True:
-    try:
-        success, frame = camera.read()
-    except:
-        print("There is no camera")
-        break
+    success, frame = camera.read()
+    #try:
+     #   success, frame = camera.read()
+    #except:
+     #   print("There is no camera")
+      #  break
     
     #insert any model calls here
     frame = landmark_tracker.detect_and_draw_frame(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
