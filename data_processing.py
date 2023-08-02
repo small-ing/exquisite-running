@@ -8,7 +8,9 @@ import time
 import cv2
 from alive_progress import alive_bar
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 landmarker = Tracker()
+
 # read in images, pass them through the landmark, and save tensors that store the landmark data
 def collect_data():
     folder_path = 'data'
