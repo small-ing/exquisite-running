@@ -33,20 +33,29 @@ def collect_data():
         return
 
     # Get a list of image files in the folder
-    image_files = [file for file in os.listdir(folder_path) if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
-    video_files = [file for file in os.listdir(folder_path) if file.lower().endswith((".mp4"))]
+    good_image_files = [file for file in os.listdir(folder_path + "/good") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+    good_video_files = [file for file in os.listdir(folder_path + "/good") if file.lower().endswith((".mp4"))]
+    
+    bad_image_files = [file for file in os.listdir(folder_path + "/bad") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+    bad_video_files = [file for file in os.listdir(folder_path + "/bad") if file.lower().endswith((".mp4"))]
+    
+    image_files = good_image_files + bad_image_files
+    video_files = good_video_files + bad_video_files
     empty_im_landmarks = np.zeros((len(image_files), 33, 4)) # 33 landmarks, 4 values per landmark
     # Process each image in the folder
     for video_file in video_files:
         #print(os.path.join(folder_path, video_file))
         vid = cv2.VideoCapture(os.path.join(folder_path, video_file))
         
+
+        '''
         stride_time = "whatever"
         def calc_stride():
             pass
         #some logic tracking same foot hitting the ground
         #stride_time = calc_stride()
         #pass some var stride time to the tensor as a fifth value
+        '''
         
         frame = 0
         success = 1 
@@ -65,7 +74,10 @@ def collect_data():
                     for landmark in landmarker.final_landmarker.detect(image).pose_landmarks[0]:
                         empty_vid_landmarks[frame][joint_counter][0], empty_vid_landmarks[frame][joint_counter][1] = landmark.x, landmark.y
                         empty_vid_landmarks[frame][joint_counter][2], empty_vid_landmarks[frame][joint_counter][3] = landmark.z, landmark.visibility
-                    empty_labels[frame] = 0 # 0 for bad, 1 for good
+                    if video_file in good_video_files:
+                        empty_labels[frame] = 1 # 0 for bad, 1 for good
+                    else:
+                        empty_labels[frame] = 0
                     frame += 1
                 except:
                     print("No landmarks found")
@@ -86,7 +98,10 @@ def collect_data():
                 joint_counter += 1
             else: 
                 joint_counter = 0
-        empty_labels[offset + counter] = 1 # 0 for bad, 1 for good
+        if image_file in good_image_files:
+            empty_labels[offset + counter] = 1
+        else:        
+            empty_labels[offset + counter] = 0 # 0 for bad, 1 for good
         counter += 1
     
     

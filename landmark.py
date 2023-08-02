@@ -70,10 +70,12 @@ class NN(torch.nn.Module):
         
         self.layer1 = torch.nn.Linear(132, 128, bias=True)
         self.layer2 = torch.nn.Linear(128, 256, bias=True)
+        self.layer3 = torch.nn.Linear(256, 2, bias=True)
     
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
+        out = self.layer3(out)
         return out
 
 class CNN(torch.nn.Module):
