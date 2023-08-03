@@ -68,8 +68,28 @@ class Tracker():
 
         #creates vector from midpoints
         center_of_mass = (mid_shoulder_x - mid_hip_x, mid_shoulder_y - mid_hip_y)
-        return center_of_mass
+        angle = np.arctan(center_of_mass[1], center_of_mass[0])
+        return angle, center_of_mass
 
+    def stride_length(landmarks, height):
+        '''
+        determine which ankle is furthest from the eyes, and multiply that by 14/13 to get the height of the person in pixels
+        
+        take the distance between the two ankles, this is current stride length in pixels
+        
+        return both stride length in pixels, and ratio from pixels to inches
+        '''
+        #extract positional data from landmarks
+        ankles = [landmarks[27], landmarks[28]]
+        eyes = [landmarks[5], landmarks[2]]
+        average_eye =[np.average([eyes[0].x, eyes[1].x]), np.average([eyes[0].y, eyes[1].y])]
+        if np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0].x, ankles[0].y])) > np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[1].x, ankles[1].y])):
+            ankles = [landmarks[28], landmarks[27]]
+        pixel_height = np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0].x, ankles[0].y]))
+        pixel_height *= 14/13
+        #calculate distance between ankles
+        stride = np.linalg.norm(np.array([ankles[0].x, ankles[0].y]) - np.array([ankles[1].x, ankles[1].y]))        
+        return stride, pixel_height
 
         
     def draw_landmarks_on_image(self, rgb_image, detection_result):
@@ -100,7 +120,10 @@ class Tracker():
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
         marks = self.final_landmarker.detect(image)
         return self.draw_landmarks_on_image(image.numpy_view(), marks)
-
+    
+    def draw_insights(self, image):
+        pass
+    
 class NN(torch.nn.Module):
     def __init__(self):
         super(NN, self).__init__()

@@ -29,7 +29,7 @@ def collect_data():
     empty_frames = 0
     counter = 0
     joint_counter = 0
-    empty_vid_landmarks = np.zeros((1, 33, 4)) # 33 landmarks, 4 values per landmark
+    empty_vid_landmarks = np.zeros((1, 36, 4)) # 33 landmarks, 4 values per landmark
     empty_labels = np.zeros((1)) # 1 label per image
     
     # Check if the folder exists
@@ -46,7 +46,7 @@ def collect_data():
     
     image_files = good_image_files + bad_image_files
     video_files = good_video_files + bad_video_files
-    empty_im_landmarks = np.zeros((len(image_files), 33, 4)) # 33 landmarks, 4 values per landmark
+    empty_im_landmarks = np.zeros((len(image_files), 36, 4)) # 33 landmarks, 4 values per landmark
     # Process each image in the folder
     with alive_bar(len(video_files)) as bar:
         for video_file in video_files:
@@ -74,7 +74,7 @@ def collect_data():
                 else:
                     # if frame number is the same as the number of frames in the landmark tensor, recreate it with more space
                     if frame == len(empty_vid_landmarks):
-                        empty_vid_landmarks = np.concatenate((empty_vid_landmarks, np.zeros((1, 33, 4))))
+                        empty_vid_landmarks = np.concatenate((empty_vid_landmarks, np.zeros((1, 36, 4))))
                         empty_labels = np.concatenate((empty_labels, np.zeros((1))))
                     image = mp.Image(image_format=mp.ImageFormat.SRGB, data=cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
@@ -122,7 +122,57 @@ def collect_data():
     # combine the image and video landmarks
     filled_landmarks = np.concatenate((empty_im_landmarks, empty_vid_landmarks))
     return filled_landmarks, empty_labels
+
+def create_data(landmarks, height=72):
+    '''
+    BATCH, 36, 4
+    [center of mass, stride length, max_stride_length, height]
+    [left elbow angle, right elbow angle, left hip angle, right hip angle]
+    [left knee angle, right knee angle, left ankle angle, right ankle angle]
     
+    rewrite
+    1 -> left elbow angle   (11, 13, 15)
+    2 -> right elbow angle  (12, 14, 16)
+    3 -> left hip angle     (24, 23, 25)
+    4 -> right hip angle    (23, 24, 26)
+    5 -> left knee angle    (23, 25, 27)
+    6 -> right knee angle   (24, 26, 28)
+    9 -> left ankle angle   (25, 27, 31)
+    10 -> right ankle angle (26, 28, 32)
+    
+    Append Center of Mass to the end of each frame
+    Append Stride length to the end of each frame
+        Stride length is the distance between the left and right ankle
+    Height is user-input in feet, we then take further of both heels, and find distance from that to the average of the eyes, then multiply by (14/13)
+        this should give us a pixel to feet ratio
+    '''
+    for i in len(landmarks):
+        # calculate the center of mass
+        lshoulder, rshoulder = [landmarks[i][11][0], landmarks[i][11][1]], [landmarks[i][12][0], landmarks[i][12][1]]
+        lhip, rhip = [landmarks[i][23][0], landmarks[i][23][1]], [landmarks[i][24][0], landmarks[i][24][1]]
+        
+        ang, com = landmarker.center_of_mass(lshoulder, rshoulder, lhip, rhip)
+        landmarks[i][33][0] = ang
+        # calculate the stride length
+        stride_length, pixel_height = landmarker.stride_length(landmarks[i], height)
+        landmarks[i][33][1] = stride_length
+        landmarks[i][33][3] = height
+        if i != 0:
+            if stride_length > landmarks[i-1][33][2]:
+                landmarks[i][33][2] = stride_length
+        
+        # calculate the angles
+        elbows_and_hips = [[11, 13, 15], [12, 14, 16], [24, 23, 25], [23, 24, 26]]
+        knees_and_ankles = [[23, 25, 27], [24, 26, 28], [25, 27, 31], [26, 28, 32]]
+        angle_set_1 = []
+        for joint in elbows_and_hips:
+            angle_set_1.append(landmarker.angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
+        angle_set_2 = []
+        for joint in knees_and_ankles:
+            angle_set_2.append(landmarker.angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
+        landmarks[i][34][0], landmarks[i][34][1], landmarks[i][34][2], landmarks[i][34][3] = angle_set_1[0], angle_set_1[1], angle_set_1[2], angle_set_1[3]
+        landmarks[i][35][0], landmarks[i][35][1], landmarks[i][35][2], landmarks[i][35][3] = angle_set_2[0], angle_set_2[1], angle_set_2[2], angle_set_2[3]
+                
 def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, test_labels):
     should_save = False
     for i in range(epochs):
