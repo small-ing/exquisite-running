@@ -33,14 +33,14 @@ class Tracker():
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
                 
         
-    def calculate_angle(start, shared, end):
+    def calculate_angle(self, start, shared, end):
         vec_1, vec_2 = shared - start, end - shared # (x, y) vectors
         vec_1_magnitude, vec_2_magnitude = np.linalg.norm(vec_1), np.linalg.norm(vec_2)
         dot_prd = np.dot(vec_1, vec_2)
         angle = np.arccos(dot_prd / (vec_1_magnitude * vec_2_magnitude))
         return angle
     
-    def calculate_center_mass(l_shoulder, r_shoulder, l_hip, r_hip):
+    def calculate_center_mass(self, l_shoulder, r_shoulder, l_hip, r_hip):
         shoulders = [l_shoulder, r_shoulder]
         hips = [l_hip, r_hip]
 
@@ -51,27 +51,27 @@ class Tracker():
                 shoulder_pos_y =[]
             else:
                 None
-            shoulder_pos_x.append(shld.x)
-            shoulder_pos_y.append(shld.y)
+            shoulder_pos_x.append(shld[0])
+            shoulder_pos_y.append(shld[1])
         for i, hip in enumerate(hips):
             if i ==0:
                 hip_pos_x = []
                 hip_pos_y = []
             else:
                 None
-            hip_pos_x.append(hip.x)
-            hip_pos_y.append(hip.y)
+            hip_pos_x.append(hip[0])
+            hip_pos_y.append(hip[1])
 
         #calculate midpoints for shoulders/hips
         mid_shoulder_x, mid_shoulder_y  = np.average(shoulder_pos_x), np.average(shoulder_pos_y)
         mid_hip_x, mid_hip_y  = np.average(hip_pos_x), np.average(hip_pos_y)
 
         #creates vector from midpoints
-        center_of_mass = (mid_shoulder_x - mid_hip_x, mid_shoulder_y - mid_hip_y)
-        angle = np.arctan(center_of_mass[1], center_of_mass[0])
+        center_of_mass = [mid_shoulder_x - mid_hip_x, mid_shoulder_y - mid_hip_y]
+        angle = np.arctan2(center_of_mass[1], center_of_mass[0])
         return angle, center_of_mass
 
-    def stride_length(landmarks, height):
+    def stride_length(self, landmarks, height):
         '''
         determine which ankle is furthest from the eyes, and multiply that by 14/13 to get the height of the person in pixels
         
@@ -82,13 +82,13 @@ class Tracker():
         #extract positional data from landmarks
         ankles = [landmarks[27], landmarks[28]]
         eyes = [landmarks[5], landmarks[2]]
-        average_eye =[np.average([eyes[0].x, eyes[1].x]), np.average([eyes[0].y, eyes[1].y])]
-        if np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0].x, ankles[0].y])) > np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[1].x, ankles[1].y])):
+        average_eye =[np.average([eyes[0][0], eyes[1][0]]), np.average([eyes[0][1], eyes[1][1]])]
+        if np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0][0], ankles[0][1]])) > np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[1][0], ankles[1][1]])):
             ankles = [landmarks[28], landmarks[27]]
-        pixel_height = np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0].x, ankles[0].y]))
+        pixel_height = np.linalg.norm(np.array([average_eye[0], average_eye[1]]) - np.array([ankles[0][0], ankles[0][1]]))
         pixel_height *= 14/13
         #calculate distance between ankles
-        stride = np.linalg.norm(np.array([ankles[0].x, ankles[0].y]) - np.array([ankles[1].x, ankles[1].y]))        
+        stride = np.linalg.norm(np.array([ankles[0][0], ankles[0][1]]) - np.array([ankles[1][0], ankles[1][1]]))        
         return stride, pixel_height
 
         

@@ -146,12 +146,13 @@ def create_data(landmarks, height=72):
     Height is user-input in feet, we then take further of both heels, and find distance from that to the average of the eyes, then multiply by (14/13)
         this should give us a pixel to feet ratio
     '''
-    for i in len(landmarks):
+    #for loop iterate through the frames
+    for i in range(len(landmarks)):
         # calculate the center of mass
         lshoulder, rshoulder = [landmarks[i][11][0], landmarks[i][11][1]], [landmarks[i][12][0], landmarks[i][12][1]]
         lhip, rhip = [landmarks[i][23][0], landmarks[i][23][1]], [landmarks[i][24][0], landmarks[i][24][1]]
         
-        ang, com = landmarker.center_of_mass(lshoulder, rshoulder, lhip, rhip)
+        ang, com = landmarker.calculate_center_mass(lshoulder, rshoulder, lhip, rhip)
         landmarks[i][33][0] = ang
         # calculate the stride length
         stride_length, pixel_height = landmarker.stride_length(landmarks[i], height)
@@ -166,13 +167,14 @@ def create_data(landmarks, height=72):
         knees_and_ankles = [[23, 25, 27], [24, 26, 28], [25, 27, 31], [26, 28, 32]]
         angle_set_1 = []
         for joint in elbows_and_hips:
-            angle_set_1.append(landmarker.angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
+            angle_set_1.append(landmarker.calculate_angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
         angle_set_2 = []
         for joint in knees_and_ankles:
-            angle_set_2.append(landmarker.angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
+            angle_set_2.append(landmarker.calculate_angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
         landmarks[i][34][0], landmarks[i][34][1], landmarks[i][34][2], landmarks[i][34][3] = angle_set_1[0], angle_set_1[1], angle_set_1[2], angle_set_1[3]
         landmarks[i][35][0], landmarks[i][35][1], landmarks[i][35][2], landmarks[i][35][3] = angle_set_2[0], angle_set_2[1], angle_set_2[2], angle_set_2[3]
-                
+        return landmarks        
+
 def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, test_labels):
     should_save = False
     for i in range(epochs):
@@ -218,12 +220,13 @@ if __name__ == "__main__":
     print("Starting...")
     start_time = time.time()
     landmarks, labels = collect_data()
+    landmarks = create_data(landmarks)
     test_marks, test_labels = landmarks[-100:], labels[-100:]
     
     print("Time to collect data: ", time.time() - start_time)
     
     landmarks, test_marks = torch.from_numpy(landmarks), torch.from_numpy(test_marks)
-    landmarks, test_marks = landmarks.reshape(-1, 1, 33, 4), test_marks.reshape(-1, 1, 33, 4)
+    landmarks, test_marks = landmarks.reshape(-1, 1, 36, 4), test_marks.reshape(-1, 1, 36, 4)
     landmarks, test_marks = landmarks.float(), test_marks.float()
     
     labels, test_labels = torch.from_numpy(labels), torch.from_numpy(test_labels)
@@ -242,9 +245,9 @@ if __name__ == "__main__":
     
     print("Time to initialize model: ", time.time() - start_time)
     
-    train_model(model, data_loader, criteron, optimizer, 100, test_marks, test_labels)
+    train_model(model, data_loader, criteron, optimizer, 10, test_marks, test_labels)
     
-    print("Ending... Time elapsed: ", time.time() - start_time)
+    print("Ending...\nTotal Time elapsed: ", time.time() - start_time)
     # try:
     #     # Save the array to the text file
     #     np.savetxt('output.txt', landmarks)
