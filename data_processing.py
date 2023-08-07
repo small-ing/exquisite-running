@@ -131,7 +131,7 @@ def collect_data():
                         else:
                             empty_labels[counter+offset] = 0
             except Exception as e:
-                print(e)
+                # print(e)
                 empty_labels[counter+offset] = -1
                 if counter > 7000:
                     break
@@ -182,7 +182,7 @@ def create_data(landmarks, height=72):
     landmark_length = len(landmarks)
     for i in range(landmark_length):
         # calculate the center of mass
-        num = random.randint(1, 2000) 
+        num = random.randint(1, 5000) 
         lshoulder, rshoulder = [landmarks[i][11][0], landmarks[i][11][1]], [landmarks[i][12][0], landmarks[i][12][1]]
         lhip, rhip = [landmarks[i][23][0], landmarks[i][23][1]], [landmarks[i][24][0], landmarks[i][24][1]]
         
@@ -210,8 +210,6 @@ def create_data(landmarks, height=72):
         if num == 2:
             print("Random Angle 1: ", angle_set_1[random.randint(0, 3)])
             print("Random Angle 2: ", angle_set_2[random.randint(0, 3)])
-        if num == 3:
-            print("Random Landmarks: ", landmarks[i])
         landmarks[i][34][0], landmarks[i][34][1], landmarks[i][34][2], landmarks[i][34][3] = angle_set_1[0], angle_set_1[1], angle_set_1[2], angle_set_1[3]
         # print(landmarks[i][34])
         landmarks[i][35][0], landmarks[i][35][1], landmarks[i][35][2], landmarks[i][35][3] = angle_set_2[0], angle_set_2[1], angle_set_2[2], angle_set_2[3]
@@ -301,13 +299,13 @@ def model_train():
     print("Out of the ", len(labels), " labels, ", test_label_count, " of the images are bad form")
         
     data = ImageDataset(landmarks, labels)
-    data_loader = torch.utils.data.DataLoader(data, batch_size=48, shuffle=True, num_workers=2)
+    data_loader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=True, num_workers=2)
     
     print("Time to load data: ", time.time() - start_time)
     
     model = CNN()
     
-    optimizer = optim.Adam(model.parameters(), lr=0.00001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     criteron = nn.CrossEntropyLoss()
     test_label_count = 0
     for i in range(len(test_labels)):

@@ -195,6 +195,9 @@ class CNN(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.Linear(625, 625, bias=True),
             torch.nn.ReLU(),
+            torch.nn.Dropout(p=1 - keep_prob),
+            torch.nn.Linear(625, 625, bias=True),
+            torch.nn.Sigmoid(),
             torch.nn.Dropout(p=1 - keep_prob))
         # L5 Final FC 625 inputs -> 10 outputs
         self.fc2 = torch.nn.Linear(625, 2, bias=True)
