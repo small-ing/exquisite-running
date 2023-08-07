@@ -106,7 +106,7 @@ def collect_data():
     image_length = len(image_files)
     image = 0
     with alive_bar(image_length) as bar:
-        while image < image_length - 2:
+        while image < image_length:
             try:
                 # print("image: " + str(image))
                 # print("counter: " + str(counter))
@@ -127,12 +127,12 @@ def collect_data():
                     else: 
                         joint_counter = 0
                         if image_files[image] in good_image_files:
-                            empty_labels[counter+offset-1] = 1
+                            empty_labels[counter+offset] = 1
                         else:
-                            empty_labels[counter+offset-1] = 0
+                            empty_labels[counter+offset] = 0
             except Exception as e:
                 print(e)
-                empty_labels[counter+offset-1] = -1
+                empty_labels[counter+offset] = -1
                 if counter > 7000:
                     break
                 pass
@@ -153,7 +153,7 @@ def collect_data():
     empty_im_landmarks = np.delete(empty_im_landmarks, failed_indexes, 0)
     empty_labels = np.delete(empty_labels, failed_indexes, 0)
     filled_landmarks = empty_im_landmarks
-    return filled_landmarks, empty_labels
+    return filled_landmarks, empty_labels.astype(int)
 
 def create_data(landmarks, height=72):
     '''
@@ -213,7 +213,9 @@ def create_data(landmarks, height=72):
         if num == 3:
             print("Random Landmarks: ", landmarks[i])
         landmarks[i][34][0], landmarks[i][34][1], landmarks[i][34][2], landmarks[i][34][3] = angle_set_1[0], angle_set_1[1], angle_set_1[2], angle_set_1[3]
+        # print(landmarks[i][34])
         landmarks[i][35][0], landmarks[i][35][1], landmarks[i][35][2], landmarks[i][35][3] = angle_set_2[0], angle_set_2[1], angle_set_2[2], angle_set_2[3]
+        # print(landmarks[i][35])
     return landmarks        
 
 def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, test_labels):
@@ -222,11 +224,12 @@ def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, te
         with alive_bar(len(train_loader), title=i) as bar:
             for img, label in train_loader:
                 img = img.to(device)
+                # print("img: ", img)
                 img = img.to(torch.float)
                 label = label.to(device) 
-                print("label: ", label)
+                # print("label: ", label)
                 pred = model(img)
-                print("pred: ", pred)
+                # print("pred: ", pred)
                 bar()
 
                 loss = loss_fn(pred, label)
@@ -282,6 +285,7 @@ def model_train():
     print("Time to collect data: ", time.time() - start_time)
     
     landmarks, test_marks = torch.from_numpy(landmarks), torch.from_numpy(test_marks)
+    landmarks, test_marks = landmarks / 1000, test_marks / 1000
     landmarks, test_marks = landmarks.reshape(-1, 1, 36, 4), test_marks.reshape(-1, 1, 36, 4)
     landmarks, test_marks = landmarks.float(), test_marks.float()
     
@@ -303,7 +307,7 @@ def model_train():
     
     model = CNN()
     
-    optimizer = optim.Adam(model.parameters(), lr=0.000001)
+    optimizer = optim.Adam(model.parameters(), lr=0.00001)
     criteron = nn.CrossEntropyLoss()
     test_label_count = 0
     for i in range(len(test_labels)):
@@ -315,7 +319,7 @@ def model_train():
     
     model.to(device)
     
-    res = train_model(model, data_loader, criteron, optimizer, 1, test_marks, test_labels)
+    res = train_model(model, data_loader, criteron, optimizer, 50, test_marks, test_labels)
     print("Should the model be saved?: ", res)
     print("Ending...\nTotal Time elapsed: ", time.time() - start_time)
 

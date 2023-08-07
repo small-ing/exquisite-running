@@ -10,6 +10,8 @@ import numpy as np
 import torch
 import cv2
 import random
+import os
+from alive_progress import alive_bar
 
 class Tracker():
     def __init__(self, model='LITE', mode='IMAGE'):
@@ -218,13 +220,22 @@ if __name__ == "__main__":
     pTracker = Tracker(model="HEAVY")
     with pTracker.final_landmarker as landmarker:
             # Load the input image from an image file.
-        image = cv2.imread("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F.png")
-        image = pTracker.detect_and_draw_frame(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F_LANDMARKED.png", image)
-        while True:
-            cv2.imshow("Image", image)
-            
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        cv2.destroyAllWindows()
+        
+        folder_path = "data"
+        good_image_files = [file for file in os.listdir(folder_path + "/good") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+        bad_image_files = [file for file in os.listdir(folder_path + "/bad") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+        image_files = good_image_files + bad_image_files
+        with alive_bar(len(image_files)) as bar:
+            for image in image_files:
+                if image in good_image_files:
+                    im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/good/" + image))
+                    cv2.imwrite(folder_path + "/good_p/" + image, im_edit)
+                else:
+                    im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/bad/" + image))
+                    cv2.imwrite(folder_path + "/bad_p/" + image, im_edit)
+                bar()
+        # image = pTracker.detect_and_draw_frame(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # cv2.imwrite("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F_LANDMARKED.png", image)
+        print("All images written to folders.")
+        print("Finished")
