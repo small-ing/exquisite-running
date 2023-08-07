@@ -9,6 +9,7 @@ from mediapipe.framework.formats import landmark_pb2
 import numpy as np
 import torch
 import cv2
+import random
 
 class Tracker():
     def __init__(self, model='LITE', mode='IMAGE'):
@@ -33,11 +34,30 @@ class Tracker():
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
                 
         
-    def calculate_angle(self, start, shared, end):
-        vec_1, vec_2 = shared - start, end - shared # (x, y) vectors
-        vec_1_magnitude, vec_2_magnitude = np.linalg.norm(vec_1), np.linalg.norm(vec_2)
-        dot_prd = np.dot(vec_1, vec_2)
-        angle = np.arccos(dot_prd / (vec_1_magnitude * vec_2_magnitude))
+    def calculate_angle(self, vector_1, vector_2, vector_3):
+        vec_1 = np.array(vector_1)
+        vec_2 = np.array(vector_2)
+        vec_3 = np.array(vector_3)
+
+        # Check if any vector contains NaN or Inf
+        if np.any(np.isnan(vec_1)) or np.any(np.isnan(vec_2)) or np.any(np.isnan(vec_3)):
+            return np.nan  # Return NaN if any of the vectors contain invalid values
+
+        # Check if any vector has zero magnitude
+        if np.linalg.norm(vec_1) == 0.0 or np.linalg.norm(vec_2) == 0.0 or np.linalg.norm(vec_3) == 0.0:
+            return np.nan  # Return NaN if any of the vectors have zero magnitude
+
+        # Calculate the angle
+        dot_prd = np.dot(vec_1 - vec_2, vec_3 - vec_2)
+        vec_1_magnitude = np.linalg.norm(vec_1 - vec_2)
+        vec_2_magnitude = np.linalg.norm(vec_3 - vec_2)
+
+        try:
+            angle = np.arccos(dot_prd / (vec_1_magnitude * vec_2_magnitude))
+            angle = angle * 180 / np.pi  # Convert the angle to degrees
+        except RuntimeWarning:
+            angle = np.nan  # Return NaN if there's a warning during the calculation
+
         return angle
     
     def calculate_center_mass(self, l_shoulder, r_shoulder, l_hip, r_hip):
@@ -65,10 +85,12 @@ class Tracker():
         #calculate midpoints for shoulders/hips
         mid_shoulder_x, mid_shoulder_y  = np.average(shoulder_pos_x), np.average(shoulder_pos_y)
         mid_hip_x, mid_hip_y  = np.average(hip_pos_x), np.average(hip_pos_y)
-
+        mid_shoulder_x, mid_shoulder_y, mid_hip_x, mid_hip_y = int(mid_shoulder_x), int(mid_shoulder_y), int(mid_hip_x), int(mid_hip_y)
         #creates vector from midpoints
         center_of_mass = [mid_shoulder_x - mid_hip_x, mid_shoulder_y - mid_hip_y]
         angle = np.arctan2(center_of_mass[1], center_of_mass[0])
+        # angle to degrees
+        angle = angle * 180 / np.pi
         return angle, center_of_mass
 
     def stride_length(self, landmarks, height):
@@ -121,8 +143,6 @@ class Tracker():
         marks = self.final_landmarker.detect(image)
         return self.draw_landmarks_on_image(image.numpy_view(), marks)
     
-    def draw_insights(self, image):
-        pass
     
 class NN(torch.nn.Module):
     def __init__(self):
@@ -170,8 +190,6 @@ class CNN(torch.nn.Module):
         # L4 FC 4x4x128 inputs -> 625 outputs
         self.layer4 = torch.nn.Sequential(
             torch.nn.Linear(2304, 625, bias=True),
-            torch.nn.ReLU(),
-            torch.nn.Linear(625, 625, bias=True),
             torch.nn.ReLU(),
             torch.nn.Linear(625, 625, bias=True),
             torch.nn.ReLU(),
