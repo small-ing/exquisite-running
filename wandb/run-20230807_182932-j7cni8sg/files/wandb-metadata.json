@@ -1,0 +1,42 @@
+{
+    "os": "macOS-13.4.1-x86_64-i386-64bit",
+    "python": "3.10.8",
+    "heartbeatAt": "2023-08-07T23:29:32.634158",
+    "startedAt": "2023-08-07T23:29:32.197459",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/Users/jtsmalling/Documents/GitHub/exquisite/data_processing.py",
+    "codePath": "data_processing.py",
+    "git": {
+        "remote": "https://github.com/small-ing/exquisite-running.git",
+        "commit": "daf18da9fc6d433bd1e686e0e1c1de5ea89e9011"
+    },
+    "email": "main@smalling.dev",
+    "root": "/Users/jtsmalling/Documents/GitHub/exquisite",
+    "host": "Battlestation.home",
+    "username": "jtsmalling",
+    "executable": "/Users/jtsmalling/Documents/GitHub/exquisite/venv/bin/python3",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 2900,
+        "min": 2900,
+        "max": 2900
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2900,
+            "min": 2900,
+            "max": 2900
+        }
+    ],
+    "disk": {
+        "total": 465.5019874572754,
+        "used": 8.439842224121094
+    },
+    "memory": {
+        "total": 16.0
+    }
+}

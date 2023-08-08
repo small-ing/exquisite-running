@@ -191,16 +191,13 @@ class CNN(torch.nn.Module):
 
         # L4 FC 4x4x128 inputs -> 625 outputs
         self.layer4 = torch.nn.Sequential(
-            torch.nn.Linear(2304, 625, bias=True),
+            torch.nn.Linear(2304, 256, bias=True),
             torch.nn.ReLU(),
-            torch.nn.Linear(625, 625, bias=True),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(p=1 - keep_prob),
-            torch.nn.Linear(625, 625, bias=True),
+            torch.nn.Linear(256, 64, bias=True),
             torch.nn.Sigmoid(),
             torch.nn.Dropout(p=1 - keep_prob))
         # L5 Final FC 625 inputs -> 10 outputs
-        self.fc2 = torch.nn.Linear(625, 2, bias=True)
+        self.fc2 = torch.nn.Linear(64, 2, bias=True)
         torch.nn.init.xavier_uniform_(self.fc2.weight) # initialize parameters
 
     def forward(self, x):

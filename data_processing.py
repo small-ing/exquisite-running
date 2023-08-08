@@ -2,8 +2,10 @@ from landmark import Tracker, CNN #if CNN
 import torch
 import torch.nn as nn
 import torch.utils.data
-import torch.optim as optim
 import torch.nn.init
+import torch.optim as optim
+import torch.profiler
+import torchvision
 import numpy as np
 import os
 import mediapipe as mp
@@ -11,6 +13,7 @@ import time
 import cv2
 from alive_progress import alive_bar
 import random
+import wandb
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 landmarker = Tracker(model="HEAVY")
@@ -133,8 +136,6 @@ def collect_data():
             except Exception as e:
                 # print(e)
                 empty_labels[counter+offset] = -1
-                if counter > 7000:
-                    break
                 pass
                 # print("deleting index ", counter+offset-1, " because of error")
                 # empty_im_landmarks = np.delete(empty_im_landmarks, counter+offset-1, 0)
@@ -194,9 +195,10 @@ def create_data(landmarks, height=72):
         stride_length, pixel_height = landmarker.stride_length(landmarks[i], height)
         landmarks[i][33][1] = stride_length
         landmarks[i][33][3] = height
-        if i != 0:
-            if stride_length > landmarks[i-1][33][2]:
-                landmarks[i][33][2] = stride_length
+        # if i != 0:
+        #     if stride_length > landmarks[i-1][33][2]:
+        #         landmarks[i][33][2] = stride_length
+        landmarks[i][33][2] = 0
         
         # calculate the angles
         elbows_and_hips = [[11, 13, 15], [12, 14, 16], [24, 23, 25], [23, 24, 26]]
@@ -221,14 +223,14 @@ def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, te
     for i in range(epochs):
         with alive_bar(len(train_loader), title=i) as bar:
             for img, label in train_loader:
+                bar()
                 img = img.to(device)
-                # print("img: ", img)
                 img = img.to(torch.float)
                 label = label.to(device) 
+                # print("img: ", img)
                 # print("label: ", label)
                 pred = model(img)
                 # print("pred: ", pred)
-                bar()
 
                 loss = loss_fn(pred, label)
                 optimizer.zero_grad()    
@@ -239,14 +241,15 @@ def train_model(model, train_loader, loss_fn, optimizer, epochs, test_images, te
             digit = torch.argmax(pred, dim=1)
             test_labels = test_labels.to(device)
             acc = torch.sum(digit == test_labels)/len(test_labels)
-            if acc > 0.92 and loss < 0.2:
-                if not should_save:
-                    print("Good enough to save")
-                should_save = True
-                if acc > 0.95 and loss < 0.10:
-                    print(f"Accuracy - {acc} and Loss - {loss} are ideal")
-                    print("Model is Ideal, saving now...")
-                    break
+            wandb.log({"loss": loss, "accuracy": acc})
+            # if acc > 0.92 and loss < 0.2:
+            #     if not should_save:
+            #         print("Good enough to save")
+            #     should_save = True
+            #     if acc > 0.95 and loss < 0.10:
+            #         print(f"Accuracy - {acc} and Loss - {loss} are ideal")
+            #         print("Model is Ideal, saving now...")
+            #         break
         print(f"Epoch {i+1}: loss: {loss}, test accuracy: {acc}")
     return should_save
 
@@ -265,9 +268,21 @@ def draw_annotations(landmarks, image):
     for i in range(len(angles)):
         cv2.line(image, (int(angles[i][0]), int(angles[i][0])), (int(angles[i][1])), (0, 255, 0), 2)
 
-def model_train():
+def model_train(learning_rate, epochs):
     print("Starting...")
     start_time = time.time()
+    # start a new wandb run to track this script
+    wandb.init(
+    # set the wandb project where this run will be logged
+        project="stridesense",  
+    # track hyperparameters and run metadata
+        config={
+        "learning_rate": learning_rate,
+        "architecture": "CNN",
+        "dataset": "CUSTOM-STRIDESENSE",
+        "epochs": epochs,
+        }
+    )
     landmarks, labels = collect_data()
     # print(landmarks.shape)
     landmarks = create_data(landmarks)
@@ -283,7 +298,6 @@ def model_train():
     print("Time to collect data: ", time.time() - start_time)
     
     landmarks, test_marks = torch.from_numpy(landmarks), torch.from_numpy(test_marks)
-    landmarks, test_marks = landmarks / 1000, test_marks / 1000
     landmarks, test_marks = landmarks.reshape(-1, 1, 36, 4), test_marks.reshape(-1, 1, 36, 4)
     landmarks, test_marks = landmarks.float(), test_marks.float()
     
@@ -304,8 +318,9 @@ def model_train():
     print("Time to load data: ", time.time() - start_time)
     
     model = CNN()
+    model.to(device)
     
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criteron = nn.CrossEntropyLoss()
     test_label_count = 0
     for i in range(len(test_labels)):
@@ -315,12 +330,11 @@ def model_train():
     print("Out of the ", len(test_labels), " labels, ", test_label_count, " of the test set images are bad form")
     print("Time to initialize model: ", time.time() - start_time)
     
-    model.to(device)
     
-    res = train_model(model, data_loader, criteron, optimizer, 50, test_marks, test_labels)
+    res = train_model(model, data_loader, criteron, optimizer, epochs, test_marks, test_labels)
     print("Should the model be saved?: ", res)
     print("Ending...\nTotal Time elapsed: ", time.time() - start_time)
 
 
 if __name__ == "__main__":
-    model_train()
+    model_train(0.00005, 150)
