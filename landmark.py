@@ -14,7 +14,7 @@ import os
 from alive_progress import alive_bar
 
 class Tracker():
-    def __init__(self, model='LITE', mode='IMAGE'):
+    def __init__(self, model='LITE', mode='IMAGE', detect=False):
         if mode == 'LITE':
             self.model_path = 'model/pose_landmarker_lite.task'
         elif mode == 'FULL':
@@ -34,6 +34,10 @@ class Tracker():
                 base_options=self.base_options(model_asset_path=self.model_path),
                 running_mode=self.running_mode.VIDEO)
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
+        
+        if detect:
+            self.stride_model = torch.load("stride_sense_model.pth")
+            self.stride_state = torch.load("stride_sense_model_state_dict.pth")
                 
         
     def calculate_angle(self, vector_1, vector_2, vector_3):
