@@ -36,8 +36,9 @@ class Tracker():
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
         
         if detect:
-            self.stride_model = torch.load("stride_sense_model.pth")
-            self.stride_state = torch.load("stride_sense_model_state_dict.pth")
+            self.stride_model = torch.load("stride_sense_model_ot2.pth")
+            self.stride_model.load_state_dict(torch.load("stride_sense_model_state_dict_ot2.pth"))
+            self.stride_model.eval()
                 
         
     def calculate_angle(self, vector_1, vector_2, vector_3):
@@ -147,7 +148,8 @@ class Tracker():
     def detect_and_draw_frame(self, image):
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image)
         marks = self.final_landmarker.detect(image)
-        return self.draw_landmarks_on_image(image.numpy_view(), marks)
+        edit = self.draw_landmarks_on_image(image.numpy_view(), marks)
+        return edit, marks
     
     
 class NN(torch.nn.Module):
