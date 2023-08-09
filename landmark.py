@@ -36,8 +36,8 @@ class Tracker():
         self.final_landmarker = self.pose_landmarker.create_from_options(self.options)
         
         if detect:
-            self.stride_model = torch.load("stride_sense_model_ot2.pth")
-            self.stride_model.load_state_dict(torch.load("stride_sense_model_state_dict_ot2.pth"))
+            self.stride_model = torch.load("stride_sense_model_ut.pth")
+            self.stride_model.load_state_dict(torch.load("stride_sense_model_state_dict_ut.pth"))
             self.stride_model.eval()
                 
         

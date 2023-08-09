@@ -5,7 +5,7 @@ from landmark import *
 from data_processing import create_data
 
 # Path: main.py
-cap = cv2.VideoCapture("istockphoto-1138607838-640_adpp_is (1).mp4")
+cap = cv2.VideoCapture("istockphoto-811241150-640_adpp_is (2).mp4")
 landmark_tracker = Tracker(model='HEAVY', detect=True)
 
 frame_width = int(cap.get(3))
@@ -69,20 +69,31 @@ while True:
             print("Marks shape: ", marks.shape)
             marks = marks.reshape(-1, 1, 36, 4)
             print("Marks shape: ", marks.shape)
+            avg = 0
+            blank_frame = 0
             for i in range(len(frames)):      
                 print("Frame: ", i)          
                 res = landmark_tracker.stride_model(marks[i].reshape(1,1,36,4)).softmax(dim=1).detach().numpy()
                 marks[i][0][33][2] = res[0][1]*100
-                cv2.putText(frames[i], str(res[0][1]*100) + "%", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
+                cv2.putText(frames[i], str(res[0][1]*100) + "%", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
+                if marks[i][0][33][2].item() > 0 and not np.isnan(marks[i][0][33][2].item()):
+                    avg += marks[i][0][33][2].item()
+                else:
+                    blank_frame += 1
+                if marks[i][0][33][2] < 90:
+                    print("...  Frame: ", i, " needs further evaluation")
+                    # print("Score: ", marks[i][0][33][2].item())
+                    # print("Elbow Angles: ", marks[i][0][34][:2])
+                    # print("Knee Angles: ", marks[i][0][35][:2])
+                    # print("Hip Angles: ", marks[i][0][34][2:])
+                    # print("Ankle Angles: ", marks[i][0][35][2:])
                 out.write(frames[i])
-                cv2.imshow("Camera", frames[i])
-            for i in range(len(frames)):
-                if marks[i][0][33][2] < 0.9:
-                    print("Frame: ", i, " needs further evaluation")
-    
-            assert False
+
+            print("Average Score (0-100): ", avg/(len(frames)-blank_frame))
+            
+            cv2.imshow("Camera", frames[i])        
     except Exception as e:
-        print(e)
+        # print(e)
         print("Done writing video")
         break
     if cv2.waitKey(1) & 0xFF == ord('q'):
