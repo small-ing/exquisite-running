@@ -88,7 +88,7 @@ class VideoWriter():
                     print("Frame: ", i)          
                     res = self.landmark_tracker.stride_model(self.marks[i].reshape(1,1,36,4)).softmax(dim=1).detach().numpy()
                     self.marks[i][0][33][2] = res[0][1]*100
-                    cv2.putText(self.frames[i], "StrideScore " + str(round(res[0][1]*100),3) + "%", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
+                    cv2.putText(self.frames[i], "StrideScore " + str(round(res[0][1]*100,3)) + "%", (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 1, cv2.LINE_AA)
                     if self.marks[i][0][33][2].item() > 0 and not np.isnan(self.marks[i][0][33][2].item()):
                         avg += self.marks[i][0][33][2].item()
                     else:

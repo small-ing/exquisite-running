@@ -62,12 +62,15 @@ def home():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             avg, problem_frames, scores = writer.write()
-            print("Average score: " + str(round(avg, 2)))
+            print("Average score: " + str(avg))
+            avg = round(float(avg), 2)
+            print("Rounded average score: " + str(avg))
+            avg = str(avg)
             print("Problem frames: " + str(problem_frames))
             # print("Scores: " + str(scores))
-            for score in scores:
+            for score in range(len(scores)):
                 #trim scores to 2 decimal places
-                score = round(score, 3)
+                scores[score] = round(scores[score], 3)
             time.sleep(len(scores) / 50)
             session['filename'] = filename.split(".")[0]
             session['avg'] = avg
