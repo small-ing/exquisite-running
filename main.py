@@ -68,7 +68,7 @@ def home():
             for score in scores:
                 #trim scores to 2 decimal places
                 score = round(score, 3)
-            time.sleep(4)
+            time.sleep(len(scores) / 50)
             session['filename'] = filename.split(".")[0]
             session['avg'] = avg
             session['problem_frames'] = problem_frames
