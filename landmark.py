@@ -227,21 +227,22 @@ if __name__ == "__main__":
     with pTracker.final_landmarker as landmarker:
             # Load the input image from an image file.
         
-        folder_path = "data"
-        good_image_files = [file for file in os.listdir(folder_path + "/good") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
-        bad_image_files = [file for file in os.listdir(folder_path + "/bad") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
-        image_files = good_image_files + bad_image_files
-        with alive_bar(len(image_files)) as bar:
-            for image in image_files:
-                if image in good_image_files:
-                    im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/good/" + image))
-                    cv2.imwrite(folder_path + "/good_p/" + image, im_edit)
-                else:
-                    im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/bad/" + image))
-                    cv2.imwrite(folder_path + "/bad_p/" + image, im_edit)
-                bar()
-        # image = pTracker.detect_and_draw_frame(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        # cv2.imwrite("data/9189211C-DEBD-4D0B-8C4A-39C3BD30261F_LANDMARKED.png", image)
+        # folder_path = "data"
+        # good_image_files = [file for file in os.listdir(folder_path + "/good") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+        # bad_image_files = [file for file in os.listdir(folder_path + "/bad") if file.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".bmp"))]
+        # image_files = good_image_files + bad_image_files
+        # with alive_bar(len(image_files)) as bar:
+        #     for image in image_files:
+        #         if image in good_image_files:
+        #             im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/good/" + image))
+        #             cv2.imwrite(folder_path + "/good_p/" + image, im_edit)
+        #         else:
+        #             im_edit = pTracker.detect_and_draw_frame(cv2.imread(folder_path + "/bad/" + image))
+        #             cv2.imwrite(folder_path + "/bad_p/" + image, im_edit)
+        #         bar()
+        images = ["ezgif.com-webp-to-jpg.jpg","running.jpg"]
+        for image_name in images:
+            image, mark = pTracker.detect_and_draw_frame(cv2.imread(image_name))
+            cv2.imwrite(f"landmark_{image_name}.png", image)
         print("All images written to folders.")
         print("Finished")

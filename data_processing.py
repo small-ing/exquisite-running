@@ -139,13 +139,13 @@ def create_data(landmarks, height=72):
     landmark_length = len(landmarks)
     for i in range(landmark_length):
         # calculate the center of mass
-        num = random.randint(1, 5000) 
+        # num = random.randint(1, 5000) 
         lshoulder, rshoulder = [landmarks[i][11][0], landmarks[i][11][1]], [landmarks[i][12][0], landmarks[i][12][1]]
         lhip, rhip = [landmarks[i][23][0], landmarks[i][23][1]], [landmarks[i][24][0], landmarks[i][24][1]]
         
         ang, com = landmarker.calculate_center_mass(lshoulder, rshoulder, lhip, rhip)
-        if num == 1:
-            print("Center of Mass Angle: ", ang)
+        # if num == 1:
+        #     print("Center of Mass Angle: ", ang)
         landmarks[i][33][0] = ang
         # calculate the stride length
         stride_length, pixel_height = landmarker.stride_length(landmarks[i], height)
@@ -165,9 +165,9 @@ def create_data(landmarks, height=72):
         angle_set_2 = []
         for joint in knees_and_ankles:
             angle_set_2.append(landmarker.calculate_angle(landmarks[i][joint[0]], landmarks[i][joint[1]], landmarks[i][joint[2]]))
-        if num == 2:
-            print("Random Angle 1: ", angle_set_1[random.randint(0, 3)])
-            print("Random Angle 2: ", angle_set_2[random.randint(0, 3)])
+        # if num == 2:
+        #     print("Random Angle 1: ", angle_set_1[random.randint(0, 3)])
+        #     print("Random Angle 2: ", angle_set_2[random.randint(0, 3)])
         landmarks[i][34][0], landmarks[i][34][1], landmarks[i][34][2], landmarks[i][34][3] = angle_set_1[0], angle_set_1[1], angle_set_1[2], angle_set_1[3]
         # print(landmarks[i][34])
         landmarks[i][35][0], landmarks[i][35][1], landmarks[i][35][2], landmarks[i][35][3] = angle_set_2[0], angle_set_2[1], angle_set_2[2], angle_set_2[3]
